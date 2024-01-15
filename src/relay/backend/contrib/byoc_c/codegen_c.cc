@@ -242,14 +242,12 @@ class CModuleCodegen : public CSourceModuleCodegenBase {
     code_stream_ << "#include <cstring>\n";
     code_stream_ << "#include <vector>\n";
     code_stream_ << "#include <tvm/runtime/c_runtime_api.h>\n";
-    code_stream_ << "#include <tvm/runtime/packed_func.h>\n";
+    code_stream_ << "#include <tvm/runtime/c_backend_api.h>\n";
     code_stream_ << "#include <dlpack/dlpack.h>\n";
-    // dnnl_kernel file is saved under src/runtime/contrib/dnnl so that we don't
-    // expose it to ordinary users. To make export_library use it, users need to
-    // pass -I${PATH_TO_TVM}/src/runtime/contrib
-    code_stream_ << "#include <dnnl/dnnl_kernel.h>\n";
-    code_stream_ << "using namespace tvm::runtime;\n";
-    code_stream_ << "using namespace tvm::runtime::contrib;\n";
+    code_stream_ << "#ifdef __cplusplus\n";
+    code_stream_ << "#include <tvm/runtime/ndarray.h>\n";
+    code_stream_ << "#include <tvm/runtime/packed_func.h>\n";
+    code_stream_ << "#endif\n";
     code_stream_ << "\n";
 
     ICHECK(ref->IsInstance<FunctionNode>());
