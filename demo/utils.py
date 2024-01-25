@@ -12,6 +12,8 @@ def save_lib(lib, graph, param):
         f_graph_json.write(graph)
     with open(r"out/param.bin", "wb") as f_params:
         f_params.write(runtime.save_param_dict(param))
+        # for k, v in param.items():
+        #     print(f'{k}: {v}')
 
 def load_lib():
     # Load model.so
