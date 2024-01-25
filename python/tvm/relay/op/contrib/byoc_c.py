@@ -54,4 +54,35 @@ def get_attrs(expr):
 _register_external_op_helper("nn.conv2d")
 _register_external_op_helper("nn.relu")
 _register_external_op_helper("nn.bias_add")
+_register_external_op_helper("add")
+
+
+def conv_pattern():
+    """Create conv patterns.
+    Parameters
+    ----------
+    op_name : str
+        The first call node's op name.
+    with_bias : bool
+    -------
+    conv_out : CallPattern
+    """
+    data = wildcard()
+    weight = wildcard()
+    bias = wildcard()
+    conv = is_op("nn.conv2d")(data, weight)
+    bias_optional = conv.optional(
+        lambda x: is_op("nn.bias_add")(x, bias)
+    )
+    return bias_optional
+
+@register_pattern_table("byoc_c")
+def pattern_table():
+    pattern_list = list()
+    pattern_list.append(
+        ("nn.conv2d", conv_pattern())
+    )
+    return pattern_list
+
+
 

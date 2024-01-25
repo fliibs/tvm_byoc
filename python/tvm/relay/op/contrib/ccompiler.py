@@ -51,9 +51,10 @@ def get_attrs(expr):
         return get_attrs(expr.tuple_value)
     return {}
 
-_register_external_op_helper("nn.conv2d")
-_register_external_op_helper("nn.relu")
-_register_external_op_helper("nn.bias_add")
+
+_register_external_op_helper("add")
+_register_external_op_helper("multiply")
+_register_external_op_helper("subtract")
 
 # @tvm.ir.register_op_attr("nn.relu", "target.ccompiler", level=9)
 # def relu(expr):

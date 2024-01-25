@@ -181,7 +181,6 @@ perf
 *.json
 *.params
 *.ro
-*.onnx
 *.h5
 synset.txt
 cat.jpg

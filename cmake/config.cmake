@@ -154,7 +154,9 @@ set(USE_MICRO_STANDALONE_RUNTIME OFF)
 # - OFF: disable llvm, note this will disable CPU codegen
 #        which is needed for most cases
 # - /path/to/llvm-config: enable specific LLVM when multiple llvm-dev is available.
-set(USE_LLVM OFF)
+set(USE_LLVM ON)
+set(USE_BYOC ON)
+set(USE_CCOMPILER ON)
 
 # Whether use MLIR to help analyze, requires USE_LLVM is enabled
 # Possible values: ON/OFF
@@ -196,7 +198,7 @@ set(USE_MKL OFF)
 # - C_SRC: use c source runtime in DNNL codegen
 # - path/to/oneDNN：oneDNN root path
 # - OFF: Disable DNNL
-set(USE_DNNL OFF)
+set(USE_DNNL ON)
 
 # Whether use Intel AMX instructions.
 set(USE_AMX OFF)

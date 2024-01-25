@@ -23,3 +23,17 @@ def load_lib():
     with open(r"out/param.bin", "rb") as f_params:
         param = runtime.load_param_dict(f_params.read())
     return lib, graph, param
+
+
+with open(r"out/param.bin", "rb") as f_params:  
+    param = runtime.load_param_dict(f_params.read())
+
+print(param)
+
+with open("output.bin", "rb") as file:
+    # 读取整个文件内容
+    binary_data = file.read()
+
+# 打印二进制数据的十六进制表示
+hex_representation = " ".join(format(byte, "02X") for byte in binary_data)
+print(hex_representation)
