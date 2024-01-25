@@ -7,7 +7,7 @@ from tvm.relay.op.contrib.byoc_c import pattern_table
 
 
 input_name = 'input'
-shape_dict = {input_name: [1,3,224,224]}
+shape_dict = {input_name: [1,3,210,210]}
 # model_path = 'single_cnn_3_1_3.onnx'
 model_path = 'cnn_relu_3_1_3.onnx'
 model = onnx.load(model_path)
@@ -44,7 +44,7 @@ with open("generated_code.c", "w") as f:
 save_lib(graph_module.get_lib(),graph_module.get_graph_json(),graph_module.get_params())
 
 lib, graph, param = load_lib()
-numpydata = np.random.randn(1,3,224,224).astype("float32")
+numpydata = np.random.randn(1,3,210,210).astype("float32")
 map_inputs = {}
 map_inputs["input"] = numpydata
 
@@ -56,6 +56,7 @@ for name, data in map_inputs.items():
     rt_mod.set_input(name, data)
 rt_mod.set_input(**param)
 rt_mod.run()
-
-output_shape = (1,3,220,220)
+print("fl")
+output_shape = (1,3,206,206)
 res = rt_mod.get_output(0, tvm.nd.empty(output_shape))
+print(res)
