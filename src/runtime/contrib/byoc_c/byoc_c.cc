@@ -25,16 +25,15 @@ void byoc_c_conv2d(float* data, float* weights, float* out, int p_N_, int p_C_, 
         for (int kh = 0; kh < p_Kh_; ++kh) {          
             for (int kw = 0; kw < p_Kw_; ++kw) {      
                 printf("%f\n",weights[kh*p_Kw_+kw]);
-                writeFloatToBinaryFile(weights[kh*p_Kw_+kw], "output.bin");
+                // writeFloatToBinaryFile(weights[kh*p_Kw_+kw], "output.bin");
             }                                         
         } 
 
         for (int n = 0; n < p_N_; ++n) {
             for (int o = 0; o < p_O_; ++o){
-                for (int h = 0; h < p_H_; ++h) {
-                    for (int w = 0; w < p_W_; ++w) {
-                        out[n*p_O_*p_H_*p_W_+o*p_H_*p_W_+h*p_W_+w] = 1;
-                        
+                for (int h = 0; h < p_H_-2; ++h) {
+                    for (int w = 0; w < p_W_-2; ++w) {
+                        out[n*p_O_*(p_H_-2)*(p_W_-2)+o*(p_H_-2)*(p_W_-2)+h*(p_W_-2)+w] = n*p_O_*(p_H_-2)*(p_W_-2)+o*(p_H_-2)*(p_W_-2)+h*(p_W_-2)+w;
                     }
                 }
             }
@@ -43,6 +42,7 @@ void byoc_c_conv2d(float* data, float* weights, float* out, int p_N_, int p_C_, 
 } // byoc_c_conv2d
 
 void byoc_c_bias_add(float* data, float* bias, float* out, int p_N_, int p_C_, int p_H_, int p_W_, int axis) {
+        
         for (int n = 0; n < p_N_; ++n) {          
             for (int c = 0; c < p_C_; ++c) { 
                 for (int w = 0; w < p_W_; ++w) {

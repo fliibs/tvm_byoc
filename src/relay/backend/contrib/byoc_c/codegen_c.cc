@@ -326,17 +326,17 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     std::cout << "//" << "Desctribe_OP: "<< std::endl;
     std::cout << "//" << "op_name: "   << call->op                 << std::endl;
     std::cout << "//" << "attrs: "     << call->attrs              << std::endl;
-    std::cout << "//" << "size: "            << call->args.size()        << std::endl;
-    for (size_t i=0; i<call->args.size(); ++i) {
-      std::cout << "//" << "args["      << i << "]: " << call->args[i] << std::endl;
-    }
+    // std::cout << "//" << "size: "            << call->args.size()        << std::endl;
+    // for (size_t i=0; i<call->args.size(); ++i) {
+    //   std::cout << "//" << "args["      << i << "]: " << call->args[i] << std::endl;
+    // }
     for (size_t i=0; i<call->type_args.size(); ++i) {
       std::cout << "//" << "type_args["      << i << "]: " << call->type_args[i] << std::endl;
     }
-    std::cout << "//" << "type_args: "       << call->type_args          << std::endl;
-    std::cout << "//" << "virtual_device_: " << call->virtual_device_          << std::endl;
-    std::cout << "//" << "span: "            << call->span                     << std::endl;
-    std::cout << "//" << "attribute: "       << std::endl;       
+    // std::cout << "//" << "type_args: "       << call->type_args          << std::endl;
+    // std::cout << "//" << "virtual_device_: " << call->virtual_device_          << std::endl;
+    // std::cout << "//" << "span: "            << call->span                     << std::endl;
+    // std::cout << "//" << "attribute: "       << std::endl;       
     // macro_stream << "//" << "data_layout: "     << call->attrs.as<Conv2DAttrs>()->data_layout << "\n "; 
     // macro_stream << "//" << "kernel_layout: "   << call->attrs.as<Conv2DAttrs>()->kernel_layout << "\n "; 
     // macro_stream << "//" << "padding: "         << call->attrs.as<Conv2DAttrs>()->padding << "\n "; 
@@ -363,6 +363,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     // for (size_t i = 0; i < out_shape.size(); ++i) {
     //   out_size *= out_shape[i];
     // }
+    // std::cout << out_size << std::endl;
     // buf_stream << dtype << "* " << out << " = (" << dtype << "*)malloc(4 * " << out_size << ");";
     // buf_decl_.push_back(buf_stream.str());
     
