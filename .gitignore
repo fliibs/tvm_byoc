@@ -277,3 +277,8 @@ gallery/how_to/work_with_microtvm/micro_tvmc.py
 
 # GDB history file
 .gdb_history
+
+# demo generated files
+demo/out/*.bin
+demo/out/*.llvm
+demo/out/*.relay
