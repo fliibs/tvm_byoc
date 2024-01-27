@@ -4,7 +4,9 @@ import tvm
 from tvm import relay, runtime
 from utils import *
 
-def write_output(path, content):
+def write_output(path, content, verbose=True):
+    if verbose:
+        print(content)
     out = open(path, 'w')
     out.write(content)
     out.close()
@@ -20,7 +22,7 @@ seq_1 = tvm.transform.Sequential(
     [
         relay.transform.InferType(),
         # relay.transform.MergeComposite(),
-        relay.transform.AnnotateTarget("byoc_json"),
+        relay.transform.AnnotateTarget("dnnl"),
         relay.transform.PartitionGraph(),
         relay.transform.InferType(),
     ]
@@ -36,7 +38,7 @@ print(graph_module.get_lib().imported_modules)
 
 i=0
 for module in graph_module.get_lib().imported_modules:
-    print(module)
+    # print(module)
     module_key_type = module.type_key.split('_')[-1]
     write_output(f'out/out_{i}.{module_key_type}', module.get_source())
     i+=1
