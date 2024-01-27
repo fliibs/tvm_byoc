@@ -13,7 +13,8 @@ def write_output(path, content, verbose=True):
 
 input_name = 'input'
 shape_dict = {input_name: [1,3,224,224]}
-model_path = 'single_cnn_3_1_3.onnx'
+# model_path = 'single_cnn_3_1_3.onnx'
+model_path = 'cnn_relu_3_1_3.onnx'
 # model_path = '../workspace/model/mobilenet_v2_224x224.onnx'
 model = onnx.load(model_path)
 mod, params = tvm.relay.frontend.from_onnx(model, shape_dict)
@@ -22,7 +23,7 @@ seq_1 = tvm.transform.Sequential(
     [
         relay.transform.InferType(),
         # relay.transform.MergeComposite(),
-        relay.transform.AnnotateTarget("dnnl"),
+        relay.transform.AnnotateTarget("byoc_json"),
         relay.transform.PartitionGraph(),
         relay.transform.InferType(),
     ]

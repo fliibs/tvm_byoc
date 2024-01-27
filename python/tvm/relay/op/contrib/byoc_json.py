@@ -58,6 +58,7 @@ def get_attrs(expr):
 # _register_external_op_helper("nn.batch_norm")
 # _register_external_op_helper("nn.conv1d")
 _register_external_op_helper("nn.conv2d")
+_register_external_op_helper("nn.bias_add")
 # _register_external_op_helper("nn.conv3d")
 # _register_external_op_helper("nn.conv2d_transpose")
 # _register_external_op_helper("nn.conv3d_transpose")
