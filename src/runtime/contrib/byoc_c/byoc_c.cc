@@ -24,8 +24,8 @@ void byoc_c_conv2d(float* data, float* weights, float* out, int p_N_, int p_C_, 
         
         for (int kh = 0; kh < p_Kh_; ++kh) {          
             for (int kw = 0; kw < p_Kw_; ++kw) {      
-                printf("%f\n",weights[kh*p_Kw_+kw]);
-                // writeFloatToBinaryFile(weights[kh*p_Kw_+kw], "output.bin");
+                // printf("%f\n",weights[kh*p_Kw_+kw]);
+                writeFloatToBinaryFile(weights[kh*p_Kw_+kw], "output.bin");
             }                                         
         } 
 

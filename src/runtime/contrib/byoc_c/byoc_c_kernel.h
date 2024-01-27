@@ -27,7 +27,8 @@ extern "C" TVM_DLL void byoc_c_relu(float* data, float* out, int p_N_, int p_C_,
 extern "C" TVM_DLL void writeFloatToBinaryFile(float value, const std::string& filename);
 
 extern "C" TVM_DLL void writeStringToTxtFile(std::string content, const std::string& filename);
-}
-}
-}
+
+} // contrib 
+} // runtime 
+} // tvm
 #endif
