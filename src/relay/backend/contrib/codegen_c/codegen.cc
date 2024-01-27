@@ -17,14 +17,11 @@
  * under the License.
  */
 
-#include <tvm/relay/attrs/nn.h>
-#include <tvm/relay/expr_functor.h>
 #include <tvm/relay/transform.h>
 #include <tvm/relay/type.h>
 #include <tvm/runtime/module.h>
 #include <tvm/runtime/ndarray.h>
 #include <tvm/runtime/object.h>
-#include <tvm/runtime/registry.h> 
 
 #include <sstream>
 #include <string>
@@ -145,28 +142,47 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     std::ostringstream decl_stream;
     std::ostringstream buf_stream;
 
-    std::string func_name = "printf";
+    std::string func_name = ext_func_id_ + "_" + std::to_string(func_idx++);
 
-    // OP
-    const auto* op_node = call->op.as<OpNode>();
-    Op op = GetRef<Op>(op_node);
+    // Make function declaration
+    macro_stream << "CSOURCE_BINARY_OP_" << call->args.size() << "D(" << func_name << ", ";
 
-    // input size
+    if (backend::IsOp(call, "add")) {
+      macro_stream << "+";
+    } else if (backend::IsOp(call, "subtract")) {
+      macro_stream << "-";
+    } else if (backend::IsOp(call, "multiply")) {
+      macro_stream << "*";
+    } else {
+      LOG(FATAL) << "Unrecognized op";
+    }
+
     auto in_shape = backend::GetShape(call->args[0]->checked_type());
+    for (size_t i = 0; i < in_shape.size(); ++i) {
+      macro_stream << ", " << in_shape[i];
+    }
 
-    // type
     const auto* type_node = call->checked_type().as<TensorTypeNode>();
     ICHECK(type_node);
     const auto& dtype = GetDtypeString(type_node);
+    macro_stream << ", " << dtype;
+
+    macro_stream << ");";
+    func_decl_.push_back(macro_stream.str());
 
     // Make function call when visiting arguments
-    decl_stream << func_name << "(\"";
-    decl_stream << op << ",";
-    for (size_t i = 0; i < in_shape.size(); ++i) {
-      decl_stream << in_shape[i] << ", ";
+    bool first = true;
+    decl_stream << func_name << "(";
+    for (size_t i = 0; i < call->args.size(); ++i) {
+      auto res = VisitExpr(call->args[i]);
+      for (auto out : res) {
+        if (!first) {
+          decl_stream << ", ";
+        }
+        first = false;
+        decl_stream << out.name;
+      }
     }
-    decl_stream << dtype << "\\n\");";
-
 
     std::string out = "buf_" + std::to_string(buf_idx_++);
     auto out_shape = backend::GetShape(call->checked_type());
@@ -177,6 +193,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     buf_stream << dtype << "* " << out << " = (" << dtype << "*)malloc(4 * " << out_size << ");";
     buf_decl_.push_back(buf_stream.str());
 
+    decl_stream << ", " << out << ");";
     ext_func_body_.push_back(decl_stream.str());
 
     // Update output buffer
@@ -221,9 +238,6 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
   std::vector<std::string> buf_decl_;
 };
 
-
-
-
 /*! \brief Emits C/C++ code for a module. */
 class CodegenCModule {
  public:
@@ -259,12 +273,38 @@ class CodegenCModule {
     os << "#include <tvm/runtime/c_runtime_api.h>\n";
     os << "#include <tvm/runtime/c_backend_api.h>\n";
 
-    os << "#ifdef __cplusplus\n";
-    os << "#include <tvm/runtime/ndarray.h>\n";
-    os << "#include <tvm/runtime/packed_func.h>\n";
-    os << "#endif\n";
-    os << "\n";
+    if (needs_extra_headers_) {
+      // This segment would be generated in C++ because of the usage
+      // of tvm::runtime::Array. This is not ideal, but this to demonstrate
+      // constant copying process used packed imports in other external
+      // codegen. Moreover, in microTVM we dont expect this part to be generated.
+      os << "#ifdef __cplusplus\n";
+      os << "#include <tvm/runtime/ndarray.h>\n";
+      os << "#include <tvm/runtime/packed_func.h>\n";
+      os << "#endif\n";
+    }
 
+    // Define some macros to help operator implementations.
+    const char* operator_macro = R"op_macro(
+    #define CSOURCE_BINARY_OP_1D(p_ID_, p_OP_, p_DIM1_, p_DTYPE)       \
+      void p_ID_(p_DTYPE* a, p_DTYPE* b, p_DTYPE* out) {    \
+        for (int64_t i = 0; i < p_DIM1_; ++i) {                        \
+          out[i] = a[i] p_OP_ b[i];                                    \
+        }                                                              \
+      }
+
+    #define CSOURCE_BINARY_OP_2D(p_ID_, p_OP_, p_DIM1_, p_DIM2_, p_DTYPE)  \
+      void p_ID_(p_DTYPE* a, p_DTYPE* b, p_DTYPE* out) {        \
+        for (int64_t i = 0; i < p_DIM1_; ++i) {                            \
+          for (int64_t j = 0; j < p_DIM2_; ++j) {                          \
+            int64_t k = i * p_DIM2_ + j;                                   \
+            out[k] = a[k] p_OP_ b[k];                                      \
+          }                                                                \
+        }                                                                  \
+      }
+    )op_macro";
+
+    os << operator_macro << "\n\n";
   }
 
   void GenCFunc(const Function& function) {

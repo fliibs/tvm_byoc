@@ -294,7 +294,6 @@ class CodegenCBase {
                       const std::vector<std::string>& body, const std::string& const_arr_name,
                       const std::vector<Output>& outs) {
     // Create a declaration for global ndarrays that contain constant data.
-    std::cout << const_arr_name.empty() << std::endl;
     if (!const_arr_name.empty()) {
       code_stream_ << "#ifdef __cplusplus\n";
       code_stream_ << const_arr_name << "\n";

@@ -18,15 +18,19 @@ enum FileType {
 
 extern "C" TVM_DLL void byoc_c_conv2d(float* data, float* weights, float* out, int p_N_, int p_C_, int p_H_,
                             int p_W_, int p_O_, int p_Kh_, int p_Kw_, int p_Sh_, int p_Sw_, 
-                            int p_Ph0_, int p_Ph1_, int p_Pw0_, int p_Pw1_);
+                            int p_Ph0_, int p_Ph1_, int p_Pw0_, int p_Pw1_, std::string name);
 
-extern "C" TVM_DLL void byoc_c_bias_add(float* data, float* bias, float* out, int p_N_, int p_C_, int p_H_, int p_W_, int axis);
+extern "C" TVM_DLL void byoc_c_bias_add(float* data, float* bias, float* out, int p_N_, int p_C_, int p_H_, int p_W_, int axis, std::string name);
 
-extern "C" TVM_DLL void byoc_c_relu(float* data, float* out, int p_N_, int p_C_, int p_H_, int p_W_);
+extern "C" TVM_DLL void byoc_c_relu(float* data, float* out, int p_N_, int p_C_, int p_H_, int p_W_, std::string name);
 
-extern "C" TVM_DLL void writeFloatToBinaryFile(float value, const std::string& filename);
+// extern "C" TVM_DLL void writeFloatToBinaryFile(float value, const std::string& filename);
 
-extern "C" TVM_DLL void writeStringToTxtFile(std::string content, const std::string& filename);
+// extern "C" TVM_DLL void writeStringToTxtFile(std::string content, const std::string& filename);
+
+// extern "C" TVM_DLL void writeFloatToHexFile(float value, const std::string& filename);
+
+// extern "C" TVM_DLL void InputTransformToFile(float* input, int p_N_, int p_C_, int p_H_, int p_W_, std::string name, std::string path);
 
 } // contrib 
 } // runtime 

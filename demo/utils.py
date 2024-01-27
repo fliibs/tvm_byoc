@@ -27,10 +27,10 @@ def load_lib():
     return lib, graph, param
 
 
-with open(r"out/param.bin", "rb") as f_params:  
-    param = runtime.load_param_dict(f_params.read())
+# with open(r"out/param.bin", "rb") as f_params:  
+#     param = runtime.load_param_dict(f_params.read())
 
-print(param)
+# print(param)
 
 # with open("output.bin", "rb") as file:
 #     # 读取整个文件内容
