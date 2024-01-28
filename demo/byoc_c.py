@@ -57,6 +57,14 @@ for file in output_files:
         print(f"Deleted file: {file}")
     except Exception as e:
         print(f"Error deleting file {file}: {e}")
+        
+output_files = glob.glob("instruction/*")
+for file in output_files:
+    try:
+        os.remove(file)
+        print(f"Deleted file: {file}")
+    except Exception as e:
+        print(f"Error deleting file {file}: {e}")
 
 
 from tvm import cpu
