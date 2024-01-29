@@ -37,12 +37,12 @@
 #include "../../utils.h"
 #include "comp_op_matcher.h"
 
-#ifdef USE_JSON_RUNTIME
-#include "../../../../runtime/contrib/json/json_node.h"
-#include "../codegen_json/codegen_json.h"
-#else
+// #ifdef USE_JSON_RUNTIME
+// #include "../../../../runtime/contrib/json/json_node.h"
+// #include "../codegen_json/codegen_json.h"
+// #else
 #include "../codegen_c/codegen_c.h"
-#endif
+// #endif
 
 namespace tvm {
 namespace relay {
@@ -73,7 +73,7 @@ static tvm::Array<Expr> BindToCallNodeArgs(const std::vector<Expr>& args, const 
   return res;
 }
 
-#ifndef USE_JSON_RUNTIME  // C source runtime
+// #ifndef USE_JSON_RUNTIME  // C source runtime
 inline size_t GetShape1DSize(const Type& type) {
   const auto shape = GetShape(type);
   return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int>());
@@ -457,115 +457,115 @@ class DNNLModuleCodegen : public CSourceModuleCodegenBase {
   std::ostringstream code_stream_;
 };
 
-#else  // DNNL JSON runtime
+// #else  // DNNL JSON runtime
 
-/*! \brief Serializer to DNNL JSON runtime module */
-class DNNLJSONSerializer : public backend::contrib::JSONSerializer {
-  using JSONGraphNode = tvm::runtime::json::JSONGraphNode;
-  using JSONGraphNodeEntry = tvm::runtime::json::JSONGraphNodeEntry;
+// /*! \brief Serializer to DNNL JSON runtime module */
+// class DNNLJSONSerializer : public backend::contrib::JSONSerializer {
+//   using JSONGraphNode = tvm::runtime::json::JSONGraphNode;
+//   using JSONGraphNodeEntry = tvm::runtime::json::JSONGraphNodeEntry;
 
- public:
-  DNNLJSONSerializer(const std::string& symbol, const Expr& expr)
-      : JSONSerializer("dnnl_" + symbol, expr) {}
+//  public:
+//   DNNLJSONSerializer(const std::string& symbol, const Expr& expr)
+//       : JSONSerializer("dnnl_" + symbol, expr) {}
 
-  std::vector<JSONGraphNodeEntry> VisitExpr_(const CallNode* cn) override {
-    Expr expr = GetRef<Expr>(cn);
-    std::string name;
-    tvm::Array<Expr> args;
-    std::unordered_map<std::string, dmlc::any> extra_attrs;
+//   std::vector<JSONGraphNodeEntry> VisitExpr_(const CallNode* cn) override {
+//     Expr expr = GetRef<Expr>(cn);
+//     std::string name;
+//     tvm::Array<Expr> args;
+//     std::unordered_map<std::string, dmlc::any> extra_attrs;
 
-    const CallNode* call = cn;
-    if (const auto* op_node = cn->op.as<OpNode>()) {
-      name = op_node->name;
-      args = cn->args;
-    } else if (const auto* fn = cn->op.as<FunctionNode>()) {
-      auto comp = fn->GetAttr<String>(attr::kComposite);
-      ICHECK(comp.defined()) << "DNNL JSON runtime only supports composite functions.";
-      name = comp.value();
+//     const CallNode* call = cn;
+//     if (const auto* op_node = cn->op.as<OpNode>()) {
+//       name = op_node->name;
+//       args = cn->args;
+//     } else if (const auto* fn = cn->op.as<FunctionNode>()) {
+//       auto comp = fn->GetAttr<String>(attr::kComposite);
+//       ICHECK(comp.defined()) << "DNNL JSON runtime only supports composite functions.";
+//       name = comp.value();
 
-      if (name.find("dnnl.deconv2d") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv2d_transpose");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.deconv3d") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv3d_transpose");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.conv1d") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv1d");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.conv2d") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv2d");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.conv3d") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv3d");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.dense") != std::string::npos) {
-        call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.dense");
-        ICHECK(call->op.as<OpNode>()) << "Not op node";
-      } else if (name.find("dnnl.qnn.conv2d") != std::string::npos ||
-                 name.find("dnnl.qnn.dense") != std::string::npos) {
-        std::vector<Expr> args_loc;
-        call = ParseComposite(*fn, &extra_attrs, &args_loc);
-        args = BindToCallNodeArgs(args_loc, cn);
-      } else {
-        LOG(FATAL) << "Unrecognized DNNL pattern: " << name;
-      }
+//       if (name.find("dnnl.deconv2d") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv2d_transpose");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.deconv3d") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv3d_transpose");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.conv1d") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv1d");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.conv2d") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv2d");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.conv3d") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.conv3d");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.dense") != std::string::npos) {
+//         call = GetRootCall(fn->body.as<CallNode>(), 10, "nn.dense");
+//         ICHECK(call->op.as<OpNode>()) << "Not op node";
+//       } else if (name.find("dnnl.qnn.conv2d") != std::string::npos ||
+//                  name.find("dnnl.qnn.dense") != std::string::npos) {
+//         std::vector<Expr> args_loc;
+//         call = ParseComposite(*fn, &extra_attrs, &args_loc);
+//         args = BindToCallNodeArgs(args_loc, cn);
+//       } else {
+//         LOG(FATAL) << "Unrecognized DNNL pattern: " << name;
+//       }
 
-      if (args.empty()) {
-        args = cn->args;
-      }
-    } else {
-      LOG(FATAL) << "DNNL JSON runtime does not support calls to " << cn->op->GetTypeKey();
-    }
+//       if (args.empty()) {
+//         args = cn->args;
+//       }
+//     } else {
+//       LOG(FATAL) << "DNNL JSON runtime does not support calls to " << cn->op->GetTypeKey();
+//     }
 
-    std::vector<JSONGraphNodeEntry> inputs;
-    for (const auto& arg : args) {
-      auto res = VisitExpr(arg);
-      inputs.insert(inputs.end(), res.begin(), res.end());
-    }
-    auto node = std::make_shared<JSONGraphNode>(name,     /* name_ */
-                                                "kernel", /* op_type_ */
-                                                inputs, 1 /* num_outputs_ */);
-    SetCallNodeAttribute(node, call);
-    // If has post-op `clip`. Assume the last op is clip, add clip's attrs to the pattern attrs.
-    if (name.find("_clip") != std::string::npos) {
-      auto clip_call = cn->op.as<FunctionNode>()->body.as<CallNode>();
-      ICHECK(IsOp(clip_call, "clip"));
-      SetCallNodeAttribute(node, clip_call);
-    }
-    // For QNN.
-    for (const auto& kvp : extra_attrs) node->SetAttr(kvp.first, kvp.second);
+//     std::vector<JSONGraphNodeEntry> inputs;
+//     for (const auto& arg : args) {
+//       auto res = VisitExpr(arg);
+//       inputs.insert(inputs.end(), res.begin(), res.end());
+//     }
+//     auto node = std::make_shared<JSONGraphNode>(name,     /* name_ */
+//                                                 "kernel", /* op_type_ */
+//                                                 inputs, 1 /* num_outputs_ */);
+//     SetCallNodeAttribute(node, call);
+//     // If has post-op `clip`. Assume the last op is clip, add clip's attrs to the pattern attrs.
+//     if (name.find("_clip") != std::string::npos) {
+//       auto clip_call = cn->op.as<FunctionNode>()->body.as<CallNode>();
+//       ICHECK(IsOp(clip_call, "clip"));
+//       SetCallNodeAttribute(node, clip_call);
+//     }
+//     // For QNN.
+//     for (const auto& kvp : extra_attrs) node->SetAttr(kvp.first, kvp.second);
 
-    return AddNode(node, GetRef<Expr>(cn));
-  }
-};
-#endif
+//     return AddNode(node, GetRef<Expr>(cn));
+//   }
+// };
+// #endif
 
 /*!
  * \brief The external compiler/codegen tool. It takes a Relay expression/module and
  * compile it into a runtime module.
  */
 runtime::Module DNNLCompiler(const ObjectRef& ref) {
-#ifdef USE_JSON_RUNTIME
-  ICHECK(ref->IsInstance<FunctionNode>());
-  auto func = Downcast<Function>(ref);
-  auto func_name = GetExtSymbol(func);
-  DNNLJSONSerializer serializer(func_name, func);
-  serializer.serialize();
-  std::string graph_json = serializer.GetJSON();
+// #ifdef USE_JSON_RUNTIME
+//   ICHECK(ref->IsInstance<FunctionNode>());
+//   auto func = Downcast<Function>(ref);
+//   auto func_name = GetExtSymbol(func);
+//   DNNLJSONSerializer serializer(func_name, func);
+//   serializer.serialize();
+//   std::string graph_json = serializer.GetJSON();
 
-  // Note that serializer.const_name_to_constant() is ignored. Instead the TECompiler invokes
-  // a callback which calls backend::UpdateConstants to capture the map before the function
-  // 'disappears' into lowered form, on the assumption the visit order and thus constant
-  // names match those generated by the JSONSerializer.
+//   // Note that serializer.const_name_to_constant() is ignored. Instead the TECompiler invokes
+//   // a callback which calls backend::UpdateConstants to capture the map before the function
+//   // 'disappears' into lowered form, on the assumption the visit order and thus constant
+//   // names match those generated by the JSONSerializer.
 
-  const auto* pf = runtime::Registry::Get("runtime.DNNLJSONRuntimeCreate");
-  ICHECK(pf != nullptr) << "Cannot find JSON runtime module to create";
-  auto mod = (*pf)(func_name, graph_json, serializer.const_names());
-  return mod;
-#else
+//   const auto* pf = runtime::Registry::Get("runtime.DNNLJSONRuntimeCreate");
+//   ICHECK(pf != nullptr) << "Cannot find JSON runtime module to create";
+//   auto mod = (*pf)(func_name, graph_json, serializer.const_names());
+//   return mod;
+// #else
   DNNLModuleCodegen dnnl;
   return dnnl.CreateCSourceModule(ref);
-#endif
+// #endif
 }
 
 TVM_REGISTER_GLOBAL("relay.ext.dnnl").set_body_typed(DNNLCompiler);

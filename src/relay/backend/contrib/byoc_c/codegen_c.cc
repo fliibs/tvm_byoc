@@ -177,8 +177,9 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       AppendVectorToDecl(in_shape, decl);
       AppendVectorToDecl(kn_shape, decl, {1});  // Exclude the second dimension of kernel size
       AppendIntVectorToDecl(stride_shape, decl);
-      AppendIntVectorToDecl(padding_shape, decl, true);
+      AppendIntVectorToDecl(padding_shape, decl);
 
+      decl += "\"" + op_name + "\"";
       decl += ");\n";
       return decl;
   }
@@ -198,7 +199,8 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       auto axis = call->attrs.as<BiasAddAttrs>()->axis;
 
       AppendVectorToDecl(in_shape, decl);
-      decl += std::to_string(axis);
+      decl += std::to_string(axis) + ", ";
+      decl += "\"" + op_name + "\"";
       decl += ");\n";
       return decl;
   }
@@ -219,8 +221,8 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       }
       decl += out + ", ";
         // call->args[i].as<relay::ConstantNode>()  //extra branch, need optimize
-      AppendVectorToDecl(in_shape, decl, {}, true);
-
+      AppendVectorToDecl(in_shape, decl, {});
+      decl += "\"" + op_name + "\"";
       decl += ");\n";
       return decl;
   }
@@ -251,7 +253,6 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       decl_string = BiasAddDeclGen(op_name, func_name, decl_string, call, id, out);
     }
       
-
     return {macro_string, decl_string};
   }
   
@@ -352,7 +353,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     std::pair<std::string, std::string> res_string = OpFuncGen(call, func_idx, out);
     std::string macro_string = std::get<0>(res_string);
     std::string decl_string  = std::get<1>(res_string);
- 
+
     // macro_stream << macro_string;
     // func_decl_.push_back(macro_stream.str());
     decl_stream  << decl_string;
@@ -376,7 +377,6 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     output.need_copy = false;
     return {output};
   }
-
   /*!
    * \brief The accumulated constant name to constant mapping. Shared between all generated
    * functions.
