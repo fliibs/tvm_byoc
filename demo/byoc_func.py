@@ -23,20 +23,20 @@ def test_conv_in_ext_codegen():
     z = relay.add(x,y)
     mod["main"] = relay.Function([x, y], z)
     
-    seq = tvm.transform.Sequential(
-        [
-            relay.transform.InferType(),
-            # relay.transform.MergeComposite(),
-            relay.transform.AnnotateTarget("dnnl"),
-            relay.transform.PartitionGraph(),
-            relay.transform.InferType(),
-        ]
-    )
+    # seq = tvm.transform.Sequential(
+    #     [
+    #         relay.transform.InferType(),
+    #         # relay.transform.MergeComposite(),
+    #         relay.transform.AnnotateTarget("dnnl"),
+    #         relay.transform.PartitionGraph(),
+    #         relay.transform.InferType(),
+    #     ]
+    # )
 
-    mod = seq(mod)
+    # mod = seq(mod)
 
 
-    graph_module = relay.build(mod, target="c", params=params)
+    graph_module = relay.build(mod, target="llvm", params=params)
     # print(graph_module.get_lib().imported_modules[1].get_source())
     with open("generated_code.c", "w") as f:
         for i in range(len(graph_module.get_lib().imported_modules)):
@@ -44,24 +44,24 @@ def test_conv_in_ext_codegen():
 
     save_lib(graph_module.get_lib(),graph_module.get_graph_json(),graph_module.get_params())
 
-    lib, graph, param = load_lib()
-    numpydata = np.random.randn(1,10).astype("float32")
-    map_inputs = {}
-    map_inputs["x"] = numpydata
+    # lib, graph, param = load_lib()
+    # numpydata = np.random.randn(1,10).astype("float32")
+    # map_inputs = {}
+    # map_inputs["x"] = numpydata
 
 
-    from tvm import cpu
-    from tvm.contrib import graph_executor
-    rt_mod = graph_executor.create(graph, lib, cpu())
-    for name, data in map_inputs.items():
-        rt_mod.set_input(name, data)
-    rt_mod.set_input(**param)
+    # from tvm import cpu
+    # from tvm.contrib import graph_executor
+    # rt_mod = graph_executor.create(graph, lib, cpu())
+    # for name, data in map_inputs.items():
+    #     rt_mod.set_input(name, data)
+    # rt_mod.set_input(**param)
 
-    rt_mod.run()
+    # rt_mod.run()
 
-    output_shape = (1,10)
-    res = rt_mod.get_output(0, tvm.nd.empty(output_shape))
-    print(res)
+    # output_shape = (1,10)
+    # res = rt_mod.get_output(0, tvm.nd.empty(output_shape))
+    # print(res)
 
 
 test_conv_in_ext_codegen()

@@ -190,7 +190,7 @@ void InputTransformToFile(float* input, int p_N_, int p_C_, int p_H_, int p_W_, 
                     file_name += name+std::to_string(layer_id__);
                     file_name += "_batch" + std::to_string(n);
                     file_name += "_channel" + std::to_string(c);
-                    file_name += "_pipe" + std::to_string(0);
+                    file_name += "_pipe" + std::to_string(pipe);
                     hex_file_name = file_name + "_input.hex";
                     txt_file_name = file_name + "_input.txt";
                     writeValueToHexFile(input[n*p_C_*p_H_*p_W_+c*p_H_*p_W_+h*p_W_+w], hex_file_name);

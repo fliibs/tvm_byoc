@@ -157,6 +157,7 @@ set(USE_MICRO_STANDALONE_RUNTIME OFF)
 set(USE_LLVM ON)
 set(USE_BYOC ON)
 set(USE_CCOMPILER ON)
+set(USE_BEYOND ON)
 
 # Whether use MLIR to help analyze, requires USE_LLVM is enabled
 # Possible values: ON/OFF

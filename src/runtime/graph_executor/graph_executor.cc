@@ -62,6 +62,7 @@ void GraphExecutor::Run() {
   // setup the array and requirements.
   for (size_t i = 0; i < op_execs_.size(); ++i) {
     if (op_execs_[i]) op_execs_[i]();
+    printf("[Run] running finish\n");
   }
 }
 
@@ -101,6 +102,7 @@ void GraphExecutor::Init(const std::string& graph_json, tvm::runtime::Module mod
     ss << name << ":" << i;
     output_map_[ss.str()] = i;
   }
+  printf("[Init] finish init\n");
 }
 
 /*!
@@ -466,8 +468,9 @@ void GraphExecutor::SetupStorage() {
       if (!pit.scope.empty()) {
         mem_scope = String(pit.scope);
       }
-      storage_pool_.push_back(MemoryManager::GetOrCreateAllocator(dev, AllocatorType::kNaive)
+      storage_pool_.push_back(MemoryManager::GetOrCreateAllocator(dev, AllocatorType::kBeyond)
                                   ->Empty(shape, pit.dtype, dev, mem_scope));
+      printf("alloc storage using kBeyond \n");
     }
   }
 
@@ -783,6 +786,7 @@ TVM_REGISTER_GLOBAL("tvm.graph_executor.create").set_body([](TVMArgs args, TVMRe
   }
   const auto& devices = GetAllDevice(args, dev_start_arg);
   *rv = GraphExecutorCreate(args[0], args[1], devices, lookup_linked_param_func);
+  printf("[TVM_REGISTER_GLOBAL] create finish \n");
 });
 }  // namespace runtime
 }  // namespace tvm

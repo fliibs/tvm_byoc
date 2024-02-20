@@ -41,7 +41,8 @@ namespace memory {
 
 enum AllocatorType {
   kNaive = 1,
-  kPooled,
+  kPooled = 2,
+  kBeyond = 3,
 };
 
 struct Buffer {

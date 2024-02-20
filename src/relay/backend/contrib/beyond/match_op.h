@@ -12,12 +12,20 @@ class MemoryManager {
 private:
     const int memorySize;
     std::vector<bool> memoryMap; 
-    std::vector<std::pair<int, int>> allocationTable; 
+    // std::vector<std::pair<int, int>> allocationTable; 
+    std::vector<std::tuple<int, int, std::string>> allocationTable;
 
 public:
     MemoryManager(int size) : memorySize(size), memoryMap(size, false) {}
 
-    void* myMalloc(int size) {
+    void* myMalloc(const std::string& name, int size) {
+        auto it = std::find_if(allocationTable.begin(), allocationTable.end(),
+                               [name](const auto& entry) { return std::get<2>(entry) == name; });
+
+        if (it != allocationTable.end()) {
+            return reinterpret_cast<void*>(std::get<0>(*it));
+        }
+
         int start = -1;
         int count = 0;
         for (int i = 0; i < memorySize; ++i) {
@@ -39,12 +47,12 @@ public:
             for (int i = start; i < start + size; ++i) {
                 memoryMap[i] = true;
             }
-            allocationTable.emplace_back(start, size);
+            allocationTable.emplace_back(start, size, name);
             std::sort(allocationTable.begin(), allocationTable.end());
             return reinterpret_cast<void*>(start);
         }
 
-        std::cout << "Could not allocate " << size << " Byte.\n";
+        std::cout << "Could not allocate " << size << " Byte for " << name << ".\n";
         return nullptr;
     }
 
@@ -54,10 +62,10 @@ public:
         // auto removeIt = std::remove_if(allocationTable.begin(), allocationTable.end(),
                                 //    [start](const auto& entry) { return entry.first == start; });
         auto removeIt = std::find_if(allocationTable.begin(), allocationTable.end(),
-                                 [start](const auto& entry) { return entry.first == start; });
+                                 [start](const auto& entry) { return std::get<0>(entry) == start; });
         
         if (removeIt != allocationTable.end()) {
-            for (int i = start; i < start + removeIt->second; ++i) {
+            for (int i = start; i < start + std::get<1>(*removeIt); ++i) {
                 memoryMap[i] = false;
             }
             allocationTable.erase(removeIt);
@@ -70,10 +78,10 @@ public:
     void printMemoryStatus() const {
         std::cout << "\nMemory usage: \n";
         for (const auto& entry : allocationTable) {
-            std::cout << "BaseAddress: " << entry.first << ", Size: " << entry.second << " Byte\n";
+            std::cout << "Name: " << std::get<2>(entry) << ", \tBaseAddress: " << std::get<0>(entry) << ", \tSize: " << std::get<1>(entry) << " Byte" << std::endl;
         }
 
-        std::cout << "Memory free: \n";
+        std::cout << "Memory free: " << std::endl;
         int startFree = -1;
         for (int i = 0; i < memorySize; ++i) {
             if (!memoryMap[i]) {
@@ -82,14 +90,14 @@ public:
                 }
             } else {
                 if (startFree != -1) {
-                    std::cout << "BaseAddress: " << startFree << ", Size: " << i - startFree << " Byte\n";
+                    std::cout << "BaseAddress: " << startFree << ", \tSize: " << i - startFree << " Byte" << std::endl;
                     startFree = -1;
                 }
             }
         }
 
         if (startFree != -1) {
-            std::cout << "BaseAddress: " << startFree << ", Size: " << memorySize - startFree << " Byte\n";
+            std::cout << "BaseAddress: " << startFree << ", \tSize: " << memorySize - startFree << " Byte" << std::endl;
         }
     }
 }; // MemoryManager

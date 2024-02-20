@@ -29,6 +29,7 @@
 
 #include "naive_allocator.h"
 #include "pooled_allocator.h"
+#include "beyond_allocator.h"
 
 namespace tvm {
 namespace runtime {
@@ -138,6 +139,11 @@ Allocator* MemoryManager::GetOrCreateAllocator(Device dev, AllocatorType type) {
         alloc.reset(new PooledAllocator(dev));
         break;
       }
+      case kBeyond: {
+        VLOG(1) << "New beyond allocator for " << dev;
+        alloc.reset(new BEYONDAllocator(dev));
+        break;
+      }
       default:
         LOG(FATAL) << "Unknown allocator type: " << type;
     }
@@ -188,6 +194,7 @@ NDArray Allocator::Empty(ShapeTuple shape, DLDataType dtype, DLDevice dev,
   if (!mem_scope.defined() || mem_scope.value().empty() || mem_scope.value() == "global") {
     *buffer = this->Alloc(size, alignment, dtype);
   } else {
+    printf("this case 2 in Empty ========= Not prepare!!! \n");
     *buffer = this->Alloc(shape, dtype, mem_scope.value());
   }
   container->manager_ctx = reinterpret_cast<void*>(buffer);

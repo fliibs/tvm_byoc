@@ -22,5 +22,5 @@ def read_float_from_hex_file(file_path):
             print(float_value)
 
 # 示例用法
-file_path = 'param/conv2d0_batch0_channel0_pipe0_input.hex'
+file_path = 'param/bias_add1_kernel.hex'
 read_float_from_hex_file(file_path)

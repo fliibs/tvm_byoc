@@ -46,13 +46,12 @@ namespace contrib {
 
 using namespace backend;
 
-// static int layer_id__=0;
-MemoryManager MemoryManager(10 * 1024 * 1024);
-const uint32_t npu_base_address  = 1024*1024*1024; 
-
-class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, public CodegenCBase {
+class CodegenBeyond : public backend::MemoizedExprTranslator<std::vector<Output>>, public CodegenCBase {
  public:
-  explicit CodegenC(const std::string& id) { this->ext_func_id_ = id; }
+  explicit CodegenBeyond(const std::string& id) { 
+    this->ext_func_id_ = id; 
+
+  }
 
   /*!
    * \brief Emit the source code that invokes C compiler compatible wrappers.
@@ -71,13 +70,13 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
  private:
   // OP Codegen Implement
   void CheckVarOrConstant(const relay::Expr& expr) {
-  if (const auto* var = expr.as<relay::VarNode>()) {
-      std::cout << "Variable Name: " << var->name_hint() << var->checked_type() << std::endl;
-    } else if (const auto* constant = expr.as<relay::ConstantNode>()) {
-      std::cout << "Constant Value: " << "Constant" << constant->checked_type() << std::endl;
-    } else {
-      std::cout << "Not VarNode or ConstantNode" << std::endl;
-    }
+      if (const auto* var = expr.as<relay::VarNode>()) {
+        std::cout << "Variable Name: " << var->name_hint() << var->checked_type() << std::endl;
+      } else if (const auto* constant = expr.as<relay::ConstantNode>()) {
+        std::cout << "Constant Value: " << "Constant" << constant->checked_type() << std::endl;
+      } else {
+        std::cout << "Not VarNode or ConstantNode" << std::endl;
+      }
   }
 
   template<typename T>
@@ -113,73 +112,17 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       }
   }
 
-
-  std::string Conv2dMacroGen(std::string op_name, std::string func_name, std::string macro_string, const CallNode* call, int id) {
-    
-    std::string macro;
-    // type
-    const auto* type_node = call->checked_type().as<TensorTypeNode>();
-    ICHECK(type_node);
-    const auto& dtype = GetDtypeString(type_node);
-    // input size, kernel size, kernel stride, padding   
-    auto in_shape = backend::GetShape(call->args[0]->checked_type());
-    auto kn_shape = backend::GetShape(call->args[1]->checked_type());
-    auto stride_shape = call->attrs.as<Conv2DAttrs>()->strides;
-    auto padding_shape = call->attrs.as<Conv2DAttrs>()->padding;
-
-    // Make function
-    macro = macro_string + "CSOURCE_" + op_name + "(" + func_name + ", ";
-    macro += op_name + ", ";
-    macro += dtype   + ", ";
-    macro += "int, ";
-
-    for (size_t i = 0; i < in_shape.size(); ++i) {
-      macro += std::to_string(in_shape[i]) + ", ";
-    }
-    for (size_t i = 0; i < kn_shape.size(); ++i) {
-      if (i!=2) {
-        macro += std::to_string(kn_shape[i]) + ", ";
-      }
-    }
-
-    std::vector<int> stride_values;
-    for (const auto& stride : stride_shape){
-      if (stride->IsInstance<tvm::tir::IntImmNode>()) {
-        stride_values.push_back(stride.as<tvm::tir::IntImmNode>()->value);
-      }
-    }
-    for (int stride_value : stride_values) {
-      macro += std::to_string(stride_value) + ", ";
-    }
-
-    std::vector<int> padding_values;
-    for (const auto& padding : padding_shape){
-      if (padding->IsInstance<tvm::tir::IntImmNode>()) {
-        padding_values.push_back(padding.as<tvm::tir::IntImmNode>()->value);
-      }
-    }
-    for (size_t i = 0; i < padding_values.size(); ++i) {
-      macro += std::to_string(padding_values[i]);
-      if (i < padding_values.size() - 1) {
-        macro += ", ";
-      }
-    }
-    macro += ");\n";
-    
-    return macro;
-  }
-
-  std::string Conv2dDeclGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id, std::string out) {
+  std::string Conv2dDeclGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id) {
       std::string decl = decl_string + func_name + "(";
 
       // Process arguments
       for (const auto& arg : call->args) {
           auto res = VisitExpr(arg);
-          for (const auto& out : res) {
-              decl += out.name + ", ";
+          for (const auto& out_ : res) {
+              decl += out_.name + ", ";
           }
       }
-      decl += out + ", ";
+      decl += "out0, ";
 
       // Process input size, kernel size (excluding the third dimension), kernel stride, and padding
       auto in_shape = backend::GetShape(call->args[0]->checked_type());
@@ -197,16 +140,16 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       return decl;
   }
 
-  std::string BiasAddDeclGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id, std::string out) {
+  std::string BiasAddDeclGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id) {
       std::string decl = decl_string + func_name + "(";
       // Process arguments
       for (const auto& arg : call->args) {
           auto res = VisitExpr(arg);
-          for (const auto& out : res) {
-              decl += out.name + ", ";
+          for (const auto& out_ : res) {
+              decl += out_.name + ", ";
           }
       }
-      decl += out + ", ";
+      decl += "out0, ";
 
       auto in_shape = backend::GetShape(call->args[0]->checked_type());
       auto axis = call->attrs.as<BiasAddAttrs>()->axis;
@@ -218,90 +161,57 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
       return decl;
   }
 
-
-  
-  std::string ReluDeclGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id, std::string out) {
+  std::string ReluFuncGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id) {
       std::string decl = decl_string + func_name + "(";
       // input size   
       auto in_shape = backend::GetShape(call->args[0]->checked_type());
-
-      // Process arguments
-      for (const auto& arg : call->args) {
-          auto res = VisitExpr(arg);
-          for (const auto& out : res) {
-              decl += out.name + ", ";
-          }
-      }
-      decl += out + ", ";
-        // call->args[i].as<relay::ConstantNode>()  //extra branch, need optimize
-      AppendVectorToDecl(in_shape, decl, {});
-
-      decl += "\"" + op_name + "\"";
-      decl += ");\n";
-      return decl;
-  }
-
-  std::string ReluFuncGen(std::string op_name, std::string func_name, std::string decl_string, const CallNode* call, int id, std::string out) {
-      std::string decl = decl_string + func_name + "(";
-      // input size   
-      auto in_shape = backend::GetShape(call->args[0]->checked_type());
-      int shape = GenBufferSize(in_shape);
-      void* input_block = MemoryManager.myMalloc(shape);
-      void* output_block = MemoryManager.myMalloc(shape);
-      int baseaddr_in  = reinterpret_cast<uintptr_t>(input_block) + npu_base_address;
-      int baseaddr_out = reinterpret_cast<uintptr_t>(output_block) + npu_base_address;
-      MemoryManager.printMemoryStatus();
-
-      // Process arguments
-      for (const auto& arg : call->args) {
-          auto res = VisitExpr(arg);
-          for (const auto& out : res) {
-              decl += out.name + ", ";
-          }
-      }
-      decl += out + ", ";
-      AppendVectorToDecl(in_shape, decl, {});
-
-      decl += std::to_string(baseaddr_in) + ", ";
-      decl += std::to_string(baseaddr_out) + ", ";
-
-      decl += "\"" + op_name + "\"";
-      decl += ");\n";
-
-      MemoryManager.myFree(input_block);
-      return decl;
-  }
-
-
-
-  std::pair<std::string, std::string> OpFuncGen(const CallNode* call, int id, std::string out) {
-    std::string op_name;
-    if (backend::IsOp(call, "nn.conv2d")) {
-      op_name = "conv2d";
-    } else if (backend::IsOp(call, "nn.relu")) {
-      op_name = "relu";
-    } else if (backend::IsOp(call, "nn.bias_add")) {
-      op_name = "bias_add";
-    } else {
-      LOG(FATAL) << "Unrecognized op";
-    }
-    // std::string func_name =  op_name+ "_" + std::to_string(id++);
-    std::string func_name = "byoc_c_"+op_name;
-    std::string macro_string = "";
-    std::string decl_string = "";
-    
-    if (op_name == "conv2d") {
-      // macro_string = Conv2dMacroGen(op_name, func_name, macro_string, call, id);
-      decl_string = Conv2dDeclGen(op_name, func_name, decl_string, call, id, out);
-    } else if (op_name == "relu") {
-      decl_string = ReluDeclGen(op_name, func_name, decl_string, call, id, out);
-    } else if (op_name == "bias_add") {
-      decl_string = BiasAddDeclGen(op_name, func_name, decl_string, call, id, out);
-    }
+      int  shape    = GenBufferSize(in_shape);
       
-    return {macro_string, decl_string};
+
+      // Process arguments
+      for (const auto& arg : call->args) {
+          auto res = VisitExpr(arg);
+          for (const auto& out_ : res) {
+              decl += out_.name + ", ";
+          }
+      }
+
+      decl += "out0, ";
+      AppendVectorToDecl(in_shape, decl, {});
+
+      decl += "\"" + op_name + "\"";
+      decl += ");\n";
+
+      return decl;
   }
-  
+
+  std::pair<std::string, std::string> OpFuncGen(const CallNode* call, int id) {
+      std::string op_name;
+      if (backend::IsOp(call, "nn.conv2d")) {
+        op_name = "conv2d";
+      } else if (backend::IsOp(call, "nn.relu")) {
+        op_name = "relu";
+      } else if (backend::IsOp(call, "nn.bias_add")) {
+        op_name = "bias_add";
+      } else {
+        LOG(FATAL) << "Unrecognized op";
+      }
+      // std::string func_name =  op_name+ "_" + std::to_string(id++);
+      std::string func_name = "beyond_"+op_name;
+      std::string macro_string = "";
+      std::string decl_string = "";
+      
+      if (op_name == "conv2d") {
+        // macro_string = Conv2dMacroGen(op_name, func_name, macro_string, call, id);
+        decl_string = Conv2dDeclGen(op_name, func_name, decl_string, call, id);
+      } else if (op_name == "relu") {
+        decl_string = ReluFuncGen(op_name, func_name, decl_string, call, id);
+      } else if (op_name == "bias_add") {
+        decl_string = BiasAddDeclGen(op_name, func_name, decl_string, call, id);
+      }
+        
+      return {macro_string, decl_string};
+  }
 
   std::vector<Output> VisitExprDefault_(const Object* op) override {
     LOG(FATAL) << "C codegen doesn't support: " << op->GetTypeKey();
@@ -335,7 +245,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
 
   std::vector<Output> VisitExpr_(const ConstantNode* cn) final {
     Output output;
-    // Get const: static_cast<float*>(byoc_c_0_consts[0]->data)
+    // Get const: static_cast<float*>(beyond_0_consts[0]->data)
     output.name = CreateDataReference(ext_func_id_, const_idx_);
     // std::cout << output.name << std::endl;
 
@@ -363,7 +273,6 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     return {output};
   }
 
-
   std::vector<Output> VisitExpr_(const CallNode* call) override {
     std::ostringstream macro_stream;
     std::ostringstream decl_stream;
@@ -380,15 +289,8 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     for (size_t i=0; i<call->type_args.size(); ++i) {
       std::cout << "type_args["      << i << "]: " << call->type_args[i] << std::endl;
     }
-    // std::cout << "type_args: "       << call->type_args          << std::endl;
-    // std::cout << "virtual_device_: " << call->virtual_device_          << std::endl;
-    // std::cout << "span: "            << call->span                     << std::endl;
-    // std::cout << "attribute: "       << std::endl;       
+
     // macro_stream << "data_layout: "     << call->attrs.as<Conv2DAttrs>()->data_layout << "\n "; 
-    // macro_stream << "kernel_layout: "   << call->attrs.as<Conv2DAttrs>()->kernel_layout << "\n "; 
-    // macro_stream << "padding: "         << call->attrs.as<Conv2DAttrs>()->padding << "\n "; 
-    // macro_stream << "stride: "          << call->attrs.as<Conv2DAttrs>()->strides << "\n ";
-    // Testing End /////////////////////////
 
     // type
     const auto* type_node = call->checked_type().as<TensorTypeNode>();
@@ -396,7 +298,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     const auto& dtype = GetDtypeString(type_node);
 
     std::string out = "out" + std::to_string(out_idx_++);
-    std::pair<std::string, std::string> res_string = OpFuncGen(call, func_idx, out);
+    std::pair<std::string, std::string> res_string = OpFuncGen(call, func_idx);
     std::string macro_string = std::get<0>(res_string);
     std::string decl_string  = std::get<1>(res_string);
 
@@ -421,6 +323,7 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
     output.name = out;
     output.dtype = dtype;
     output.need_copy = false;
+
     return {output};
   }
   /*!
@@ -455,11 +358,11 @@ class CodegenC : public backend::MemoizedExprTranslator<std::vector<Output>>, pu
   /*! \brief The variable name to constant mapping. */
   Array<String> const_vars_;
 
-  friend class CModuleCodegen;
+  friend class BeyondModuleCodegen;
 };
 
 
-class CModuleCodegen : public CSourceModuleCodegenBase {
+class BeyondModuleCodegen : public CSourceModuleCodegenBase {
  public:
   // Create a corresponding DNNL function for the given relay Function.
   std::pair<std::string, Array<String>> GenCFunc(const Function& func) {
@@ -467,8 +370,7 @@ class CModuleCodegen : public CSourceModuleCodegenBase {
 
     // Record the external symbol for runtime lookup.
     auto sid = GetExtSymbol(func);
-
-    CodegenC builder(sid);
+    CodegenBeyond builder(sid);
     auto out = builder.VisitExpr(func->body);
     code_stream_ << builder.JIT(out);
 
@@ -486,7 +388,7 @@ class CModuleCodegen : public CSourceModuleCodegenBase {
    *
    * \return The runtime module that contains C source code.
    */
-  runtime::Module CreateCSourceModule(const ObjectRef& ref) override {
+  runtime::Module CreateCSourceModule(const ObjectRef& ref) final {
     // Create headers
     code_stream_ << "#include <cstdint>\n";
     code_stream_ << "#include <cstdlib>\n";
@@ -497,7 +399,7 @@ class CModuleCodegen : public CSourceModuleCodegenBase {
 
     code_stream_ << "#include <tvm/runtime/ndarray.h>\n";
     code_stream_ << "#include <tvm/runtime/packed_func.h>\n";
-    code_stream_ << "#include <byoc_c/byoc_c_kernel.h>\n";
+    code_stream_ << "#include <byoc_func/beyond_kernel.h>\n";
     code_stream_ << "using namespace tvm::runtime;\n";
     code_stream_ << "using namespace tvm::runtime::contrib;\n";
     // code_stream_ << "\n";
@@ -522,12 +424,12 @@ class CModuleCodegen : public CSourceModuleCodegenBase {
   std::ostringstream code_stream_;
 };
 
-runtime::Module BYOC_C(const ObjectRef& ref) {
-  CModuleCodegen byoc_c;
-  return byoc_c.CreateCSourceModule(ref);
+runtime::Module Beyond_C(const ObjectRef& ref) {
+  BeyondModuleCodegen beyond;
+  return beyond.CreateCSourceModule(ref);
 }
 
-TVM_REGISTER_GLOBAL("relay.ext.byoc_c").set_body_typed(BYOC_C);
+TVM_REGISTER_GLOBAL("relay.ext.beyond").set_body_typed(Beyond_C);
 
 }  // namespace contrib
 }  // namespace relay

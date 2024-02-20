@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include <algorithm>
-#include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -54,9 +53,9 @@ void byoc_c_conv2d(float* data, float* weights, float* out, int p_N_, int p_C_, 
         }
         void* weight_block     = memoryManager.myMalloc(p_O_*p_C_*p_Kh_*p_Kw_*4);
         void* output_block     = memoryManager.myMalloc(p_N_*p_O_*OH_*OW_*4);
-        int input_base_address = reinterpret_cast<intptr_t>(input_block);
-        int weight_base_addrss = reinterpret_cast<intptr_t>(weight_block);
-        int output_base_addrss = reinterpret_cast<intptr_t>(output_block);
+        // int input_base_address = reinterpret_cast<intptr_t>(input_block);
+        // int weight_base_addrss = reinterpret_cast<intptr_t>(weight_block);
+        // int output_base_addrss = reinterpret_cast<intptr_t>(output_block);
         
         std::cout << "\n========conv2d " << std::to_string(layer_id__) << " start========" << std::endl;
         memoryManager.printMemoryStatus();
@@ -136,12 +135,12 @@ void byoc_c_relu(float* data, float* out, int p_N_, int p_C_, int p_H_, int p_W_
         uint32_t vec_store_inst;
 
         for (int n = 0; n < p_N_; ++n) { // always 1
-            int rs_zero = ScalarRegisterManager.allocateRegister(); // register contain constant 0
-            int rs1 = ScalarRegisterManager.allocateRegister();     // register contain input_base_address
-            int rs2 = ScalarRegisterManager.allocateRegister();     // register contain output_base_address
-            int vd1 = VectorRegisterManager.allocateRegister();     // load 
-            int vd2 = VectorRegisterManager.allocateRegister();     // arth 
-            int vd3 = VectorRegisterManager.allocateRegister();     // store
+            int rs_zero = ScalarRegisterManager.allocateRegister();     // register contain constant 0
+            int rs1     = ScalarRegisterManager.allocateRegister();     // register contain input_base_address
+            int rs2     = ScalarRegisterManager.allocateRegister();     // register contain output_base_address
+            int vd1     = VectorRegisterManager.allocateRegister();     // load 
+            int vd2     = VectorRegisterManager.allocateRegister();     // arth 
+            int vd3     = VectorRegisterManager.allocateRegister();     // store
             for (int i = 0; i < static_cast<int>(std::ceil(p_H_*p_W_*p_C_/ElementWidth)); ++i) {
                 vec_load_address    = npu_base_address + input_base_address + i*4;
                 vec_store_address   = npu_base_address + output_base_addrss + i*4;
@@ -164,7 +163,7 @@ void byoc_c_relu(float* data, float* out, int p_N_, int p_C_, int p_H_, int p_W_
                 // Store data
                 uint8_t vd_store = static_cast<uint8_t>(vd3);
                 uint8_t rs1_store = static_cast<uint8_t>(rs2);
-                vec_store_inst = static_cast<uint32_t>(RVVLoadInst(vd_store, rs1_store));
+                vec_store_inst = static_cast<uint32_t>(RVVStoreInst(vd_store, rs1_store));
                 writeValueToHexFile(vec_store_inst,"instruction/instruction.hex");
             }
             VectorRegisterManager.clearAllRegisters();
@@ -177,6 +176,7 @@ void byoc_c_relu(float* data, float* out, int p_N_, int p_C_, int p_H_, int p_W_
         layer_id__++;
         std::cout << "relu finished" << std::endl;
 } // byoc_c_relu
+
 
 
 }// contrib
